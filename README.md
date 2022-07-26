@@ -4,6 +4,13 @@ Quickly generate RouteTables and VirtualGateways for redirecting traffic
 
 > NOTE: This is a fork of istio-redirector, and slimmed down to the CLI. 
 
+Install by executing:
+```bash
+go install github.com/rinormaloku/gloo-redirector@latest
+```
+
+Now to execute commands use the binary `gloo-redirector`.
+
 ## How to generate redirections?
 
 Write all the redirections in a file formatted as comma seperated values. E.g.:
