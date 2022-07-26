@@ -1,7 +1,7 @@
 package main
 
 import (
-	"gloo-redirector/cmd"
+	"github.com/rinormaloku/gloo-redirector/cmd"
 
 	log "github.com/sirupsen/logrus"
 )

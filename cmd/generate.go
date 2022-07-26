@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/rinormaloku/gloo-redirector/domain"
+	"github.com/rinormaloku/gloo-redirector/pkg/redirections"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"gloo-redirector/domain"
-	"gloo-redirector/pkg/redirections"
 	"io/ioutil"
 )
 
