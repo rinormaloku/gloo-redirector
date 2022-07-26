@@ -1,4 +1,4 @@
-module gloo-redirector
+module github.com/rinormaloku/gloo-redirector
 
 go 1.17
 
