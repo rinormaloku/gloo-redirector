@@ -1,0 +1,44 @@
+apiVersion: networking.gloo.solo.io/v2
+kind: VirtualGateway
+metadata:
+  name: north-south-{{ .RouteTableName }}
+  namespace: istio-gateways
+  labels:
+    gloo: redirector-test
+spec:
+  workloads:
+    - selector:
+        labels:
+          istio: ingressgateway
+        cluster: cluster1
+  listeners:
+    - http: {}
+      port:
+        number: 80
+      allowedRouteTables:
+        - host: {{ .Host }}
+---
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: redirect-{{ .RouteTableName }}
+  namespace: istio-gateways
+  labels:
+    gloo: redirector
+spec:
+  hosts:
+    - {{  .Host }}
+  virtualGateways:
+    - name: north-south-{{ .RouteTableName }}
+      namespace: istio-gateways
+      cluster: cluster1
+  http:
+    {{- range $matcher := .Matchers }}
+    - matchers:
+        - uri:
+            exact: {{ $matcher.ExactPath }}
+      redirect:
+        hostRedirect: {{ $matcher.HostRewrite }}
+        pathRedirect: {{ $matcher.PathRewrite }}
+        responseCode: {{ $matcher.RedirectCode }}
+    {{- end }}
