@@ -34,6 +34,6 @@ func Generate(sourceFilePath, templateFilePath string, envGenerator func(data do
 		return err
 	}
 
-	fmt.Println(content.String())
+	fmt.Print(content.String())
 	return nil
 }
