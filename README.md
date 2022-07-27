@@ -1,99 +1,109 @@
 # Gloo Redirector
 
-Quickly generate RouteTables and VirtualGateways for redirecting traffic
+Quickly generate redirection configuration from CSV rules for Gloo Edge and Gloo Mesh.
 
-> NOTE: This is a fork of istio-redirector, and slimmed down to the CLI. 
+> NOTE: istio-redirector was an inspiration for this CLI 
 
 Install by executing:
 ```bash
 go install github.com/rinormaloku/gloo-redirector@latest
 ```
 
-Now to execute commands use the binary `gloo-redirector`.
+Now to execute commands use `gloo-redirector`.
 
-## How to generate redirections?
+## How to generate redirections
 
 Write all the redirections in a file formatted as comma seperated values. E.g.:
 ```
 cat <<EOF > /tmp/redirections.csv
 https://solo.io/docs/a,https://docs.solo.io/a,301
-https://solo.io/docs/b,https://docs.solo.io,301
-https://solo.io/landingpage/a,https://landing.solo.io/a,303
-https://test.solo.io/,https://staging.solo.io/,303
 EOF
 ```
 
 Then execute generate and use the csv as a source:
 ```
-gloo-redirector generate --source /tmp/redirections.csv
+gloo-redirector edge generate --source /tmp/redirections.csv
 ```
 
-This produces a series of VirtualGateways and RouteTables, to configure the gateway(s) for redirection.
+This produces the virtual services to configure the gateway proxies for redirecting traffic, as shown below:
 
-### Customizing the Gateways and the RouteTables
-
-By default, you will create the following virtualgateway and route table definition shown below. 
-Understandably, you have to change this to match your Gateways.
-
-Do so by simply writing this to a location and modifying it to your liking. E.g.
 ```yaml
-cat <<EOF > /tmp/template.yaml
-apiVersion: networking.gloo.solo.io/v2
-kind: VirtualGateway
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
 metadata:
-  name: north-south-{{ .RouteTableName }}
-  namespace: istio-gateways
-  labels:
-    gloo: redirector
+  name: redirect-solo-io
+  namespace: gloo-system
 spec:
-  workloads:
-    - selector:
-        labels:
-          istio: ingressgateway
-        cluster: cluster1
-  listeners:
-    - http: {}
-      port:
-        number: 80
-      allowedRouteTables:
-        - host: {{ .Host }}
----
-apiVersion: networking.gloo.solo.io/v2
-kind: RouteTable
-metadata:
-  name: redirect-{{ .RouteTableName }}
-  namespace: istio-gateways
-  labels:
-    gloo: redirector
-spec:
-  hosts:
-    - {{  .Host }}
-  virtualGateways:
-    - name: north-south-{{ .RouteTableName }}
-      namespace: istio-gateways
-      cluster: cluster1
-  http:
-    {{- range $matcher := .Matchers }}
-    - matchers:
-        - uri:
-            exact: {{ $matcher.ExactPath }}
-      redirect:
-        hostRedirect: {{ $matcher.HostRewrite }}
-        pathRedirect: {{ $matcher.PathRewrite }}
-        responseCode: {{ $matcher.RedirectCode }}
-    {{- end }}
-EOF
+  virtualHost:
+    domains:
+      - solo.io
+    routes:
+      - matchers:
+          - exact: /docs/a
+        redirectAction:
+          hostRedirect: docs.solo.io
+          pathRedirect: /a
+          responseCode: MOVED_PERMANENTLY
 ```
 
-> **NOTE:** You mainly will want to change the VirtualGateway selector and namespace.
+### Customizing the default template
 
+The above output is based on a default template. The default one however, might not fit with your use-case.
+You can print the template with the command below:
+```bash
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: redirect-{{ .ResourceName }}
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+      - {{  .Host }}
+    routes:
+    {{- range $matcher := .Matchers }}
+      - matchers:
+          - exact: {{ $matcher.ExactPath }}
+        redirectAction:
+          hostRedirect: {{ $matcher.HostRewrite }}
+          pathRedirect: {{ $matcher.PathRewrite }}
+          responseCode: {{ $matcher.RedirectCode }}
+    {{- end }}
+```
+
+Redirect the output to a file (e.g. `/tmp/template.yaml`) and modify it to your liking.
 Then you can execute the generate command with your template:
 
 ```bash
-gloo-redirector generate --source /tmp/redirections.csv --template /tmp/template.yaml
+gloo-redirector edge generate --source /tmp/redirections.csv --template /tmp/template.yaml
 ```
 
 **TIP**: You can pipe the output to kubectl:
 ```bash
-gloo-redirector generate --source /tmp/redirections.csv | kubectl apply -f - 
+gloo-redirector edge generate --source /tmp/redirections.csv | kubectl apply -f - 
+```
+
+## Gloo Redirector Help
+```bash
+$ gloo-redirector --help
+
+Gloo Redirector generates 3xx redirection configuration for either Gloo Edge and Gloo Mesh.
+Examples:
+  # Generate Gloo Mesh redirection configuration using a file as a source with the default template
+  gloo-redirector mesh generate --source /tmp/redirections.csv
+
+  # Generate Gloo Edge redirection configuration using a file as a source with the default template
+  gloo-redirector edge generate --source /tmp/redirections.csv
+
+Usage:
+  gloo-redirector [command]
+
+Available Commands:
+  edge        Gloo Edge commands
+  mesh        Gloo Mesh commands
+
+Flags:
+  -h, --help   help for gloo-redirector
+
+Use "gloo-redirector [command] --help" for more information about a command.
 ```

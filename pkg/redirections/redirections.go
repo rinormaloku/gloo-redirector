@@ -1,23 +1,21 @@
-package redirections
+package mesh
 
 import (
 	"bytes"
 	_ "embed"
 	"errors"
-	"github.com/rinormaloku/gloo-redirector/domain"
 	"github.com/rinormaloku/gloo-redirector/pkg/csv"
-	"github.com/rinormaloku/gloo-redirector/pkg/templates"
+	"github.com/rinormaloku/gloo-redirector/pkg/domain"
 	log "github.com/sirupsen/logrus"
 	"net/url"
 	"strconv"
 	"strings"
-	"text/template"
 )
 
 type Redirection struct {
-	RouteTableName string
-	Host           string
-	Matchers       []Matcher
+	ResourceName string
+	Host         string
+	Matchers     []Matcher
 }
 
 type Matcher struct {
@@ -43,12 +41,12 @@ func convertToCode(redirectCode int) (string, error) {
 	return "", errors.New("the supported redirect codes are 301, 302, 303, 307 and 308, meanwhile the provided code is " + strconv.Itoa(redirectCode))
 }
 
-func Generate(inputData domain.InputData) (bytes.Buffer, error) {
+func generate(inputData domain.InputData) (bytes.Buffer, error) {
 	var payload bytes.Buffer
 
 	var hostRedirections = make(map[string]Redirection)
 
-	rulesCSV := csv.ReadFile(inputData.File)
+	rulesCSV := csv.ReadFile(inputData.CsvFile)
 
 	for _, rule := range rulesCSV {
 		fromUrl, err := url.Parse(rule[0])
@@ -73,9 +71,9 @@ func Generate(inputData domain.InputData) (bytes.Buffer, error) {
 
 		if _, ok := hostRedirections[fromUrl.Host]; !ok {
 			hostRedirections[fromUrl.Host] = Redirection{
-				RouteTableName: strings.ReplaceAll(fromUrl.Host, ".", "-"),
-				Host:           fromUrl.Host,
-				Matchers:       []Matcher{},
+				ResourceName: strings.ReplaceAll(fromUrl.Host, ".", "-"),
+				Host:         fromUrl.Host,
+				Matchers:     []Matcher{},
 			}
 		}
 
@@ -83,21 +81,17 @@ func Generate(inputData domain.InputData) (bytes.Buffer, error) {
 		red.Matchers = append(hostRedirections[fromUrl.Host].Matchers, Matcher{
 			ExactPath:    fromUrl.Path,
 			HostRewrite:  toUrl.Host,
-			PathRewrite:  toUrl.Path,
+			PathRewrite:  defaultIfEmpty(toUrl.Path, "/"),
 			RedirectCode: gloomeshRedirectCode,
 		})
 		hostRedirections[fromUrl.Host] = red
 		print("")
 	}
 
-	rtTemplate := template.New("routetable.yaml")
-
-	var parse *template.Template
-	var err error
-	if len(inputData.Template) > 0 {
-		parse, err = rtTemplate.Parse(string(inputData.Template))
-	} else {
-		parse, err = rtTemplate.Parse(templates.RoutetableYaml)
+	parse, err := inputData.ParseTemplate()
+	if err != nil {
+		log.WithError(err).Error("fail to parse template")
+		return payload, err
 	}
 
 	if err != nil {
@@ -115,4 +109,11 @@ func Generate(inputData domain.InputData) (bytes.Buffer, error) {
 	}
 
 	return payload, nil
+}
+
+func defaultIfEmpty(value, defaultValue string) string {
+	if value == "" {
+		return defaultValue
+	}
+	return value
 }

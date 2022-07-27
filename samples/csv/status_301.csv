@@ -1,4 +1,4 @@
-https://solo.io/docs/a,https://docs.solo.io/a,301
-https://solo.io/docs/b,https://docs.solo.io,301
-https://solo.io/landingpage/a,https://landing.solo.io/a,303
-https://test.solo.io/,https://staging.solo.io/,303
+http://solo.io/docs/a,http://docs.solo.io/a,301
+http://solo.io/docs/b,http://docs.solo.io/,301
+http://solo.io/landingpage/a,http://landing.solo.io/a,303
+http://test.solo.io/,http://staging.solo.io/,303

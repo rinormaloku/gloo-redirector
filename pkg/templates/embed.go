@@ -2,5 +2,8 @@ package templates
 
 import _ "embed"
 
-//go:embed resources.yaml
-var RoutetableYaml string
+//go:embed mesh-resources.yaml
+var GlooMeshResourceTemplate string
+
+//go:embed edge-resources.yaml
+var GlooEdgeResourceTemplate string

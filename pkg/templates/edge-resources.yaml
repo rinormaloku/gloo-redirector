@@ -1,0 +1,18 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: redirect-{{ .ResourceName }}
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+      - {{  .Host }}
+    routes:
+    {{- range $matcher := .Matchers }}
+      - matchers:
+          - exact: {{ $matcher.ExactPath }}
+        redirectAction:
+          hostRedirect: {{ $matcher.HostRewrite }}
+          pathRedirect: {{ $matcher.PathRewrite }}
+          responseCode: {{ $matcher.RedirectCode }}
+    {{- end }}
