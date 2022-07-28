@@ -110,4 +110,4 @@ Flags:
 Use "gloo-redirector [command] --help" for more information about a command.
 ```
 
-**NOTE:** [istio-redirector](https://github.com/blablacar/istio-redirector) is used as a starting point and is slimmed down to only the CLI.
+**NOTE:** [istio-redirector](https://github.com/blablacar/istio-redirector) was the starting point for this CLI.
