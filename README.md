@@ -2,25 +2,25 @@
 
 Generate redirection configuration from a CSV file for Gloo Edge and Gloo Mesh.
 
-> NOTE: istio-redirector was an inspiration for this CLI 
-
-Install by executing:
+**Install Gloo Redirector** by executing:
 ```bash
 go install github.com/rinormaloku/gloo-redirector@latest
 ```
 
-Now to execute commands use `gloo-redirector`.
+And proceed with the examples below.
 
 ## How to generate redirections
 
-Write all the redirections in a file formatted as comma seperated values (initial location, redirect location, and the redirection code). E.g.:
+Write all the redirections in a CSV file. For example, to redirect traffic from the **initial_location** `https://solo.io/docs/a` to the **redirect_location** `https://docs.solo.io/a` with a **redirect_code** of `301` you'd use the following sequence: `initial_location,redirect_location,redirect_code`. 
+
+Thus, for the above example we'd write the following file (keep adding further entries in new lines):
 ```
 cat <<EOF > /tmp/redirections.csv
 https://solo.io/docs/a,https://docs.solo.io/a,301
 EOF
 ```
 
-Then use the csv as the source in the command below:
+Then use the CSV as the source in the command below:
 ```
 gloo-redirector edge generate --source /tmp/redirections.csv
 ```
@@ -109,3 +109,5 @@ Flags:
 
 Use "gloo-redirector [command] --help" for more information about a command.
 ```
+
+**NOTE:** [istio-redirector](https://github.com/blablacar/istio-redirector) is used as a starting point and is slimmed down to only the CLI.
